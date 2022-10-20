@@ -212,6 +212,104 @@ class Tests(unittest.TestCase):
             with open(summary_path) as f:
                 self.assertEqual(expected, f.read())
 
+    def test_coassemble_forward_only(self):
+        with in_tempdir():
+            cmd = (
+                f"cockatoo coassemble "
+                f"--forward {SAMPLE_READS_FORWARD} "
+                f"--genomes {GENOMES} "
+                f"--genome-transcripts {GENOME_TRANSCRIPTS} "
+                f"--singlem-metapackage {METAPACKAGE} "
+                f"--assemble-unmapped "
+                f"--output test "
+                f"--conda-prefix {path_to_conda} "
+            )
+            extern.run(cmd)
+
+            config_path = os.path.join("test", "config.yaml")
+            self.assertTrue(os.path.exists(config_path))
+
+            read_size_path = os.path.join("test", "coassemble", "read_size.csv")
+            self.assertTrue(os.path.exists(read_size_path))
+
+            edges_path = os.path.join("test", "coassemble", "target", "targets.tsv")
+            self.assertTrue(os.path.exists(edges_path))
+
+            edges_path = os.path.join("test", "coassemble", "target", "elusive_edges.tsv")
+            self.assertTrue(os.path.exists(edges_path))
+
+            cluster_path = os.path.join("test", "coassemble", "target", "elusive_clusters.tsv")
+            self.assertTrue(os.path.exists(cluster_path))
+
+            expected = "\n".join(
+                [
+                    "\t".join([
+                        "samples",
+                        "length",
+                        "total_weight",
+                        "total_targets",
+                        "total_size",
+                        "recover_samples",
+                        "coassembly",
+                    ]),
+                    "\t".join([
+                        "sample_1,sample_2",
+                        "2",
+                        "2",
+                        "2",
+                        "2869",
+                        "sample_1,sample_2,sample_3",
+                        "coassembly_0"
+                    ]),
+                    ""
+                ]
+            )
+            with open(cluster_path) as f:
+                self.assertEqual(expected, f.read())
+
+            coassemble_path = os.path.join("test", "coassemble", "commands", "coassemble_commands.sh")
+            self.assertTrue(os.path.exists(coassemble_path))
+            test_dir = os.path.abspath("test")
+            expected = "\n".join(
+                [
+                    " ".join([
+                        "aviary assemble -1",
+                        os.path.join(test_dir, "coassemble", "mapping", "sample_1_unmapped.1.fq.gz"),
+                        os.path.join(test_dir, "coassemble", "mapping", "sample_2_unmapped.1.fq.gz"),
+                        " ",
+                        "--output", os.path.join(test_dir, "coassemble", "coassemble", "coassembly_0", "assemble"),
+                        "-n 16 -m 250 &>",
+                        os.path.join(test_dir, "coassemble", "coassemble", "logs", "coassembly_0_assemble.log"),
+                        ""
+                    ]),
+                    ""
+                ]
+            )
+            with open(coassemble_path) as f:
+                self.assertEqual(expected, f.read())
+
+            recover_path = os.path.join("test", "coassemble", "commands", "recover_commands.sh")
+            self.assertTrue(os.path.exists(recover_path))
+            expected = "\n".join(
+                [
+                    " ".join([
+                        "aviary recover --assembly", os.path.join(test_dir, "coassemble", "coassemble", "coassembly_0", "assemble", "assembly", "final_contigs.fasta"),
+                        "-1",
+                        os.path.join(test_dir, "coassemble", "mapping", "sample_1_unmapped.1.fq.gz"),
+                        os.path.join(test_dir, "coassemble", "mapping", "sample_2_unmapped.1.fq.gz"),
+                        os.path.join(test_dir, "coassemble", "mapping", "sample_3_unmapped.1.fq.gz"),
+                        " ",
+                        "--output", os.path.join(test_dir, "coassemble", "coassemble", "coassembly_0", "recover"),
+                        "-n 16 -m 250 &>",
+                        os.path.join(test_dir, "coassemble", "coassemble", "logs", "coassembly_0_recover.log"),
+                        ""
+                    ]),
+                    ""
+                ]
+            )
+            with open(recover_path) as f:
+                self.assertEqual(expected, f.read())
+
     def test_coassemble_taxa_of_interest(self):
         with in_tempdir():
             cmd = (

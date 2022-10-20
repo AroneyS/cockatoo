@@ -45,19 +45,20 @@ rule summary:
 rule singlem_pipe_reads:
     input:
         reads_1=lambda wildcards: config["reads_1"][wildcards.read],
-        reads_2=lambda wildcards: config["reads_2"][wildcards.read],
+        reads_2=lambda wildcards: config["reads_2"][wildcards.read] if config["reads_2"] else [],
     output:
         output_dir + "/pipe/{read}_read.otu_table.tsv"
     log:
         logs_dir + "/pipe/{read}_read.log"
     params:
-        singlem_metapackage=config["singlem_metapackage"]
+        singlem_metapackage=config["singlem_metapackage"],
+        reverse_arg="--reverse " if config["reads_2"] else "",
     conda:
         "env/singlem.yml"
     shell:
         "singlem pipe "
         "--forward {input.reads_1} "
-        "--reverse {input.reads_2} "
+        "{params.reverse_arg} {input.reads_2} "
         "--otu-table {output} "
         "--metapackage {params.singlem_metapackage} "
         "&> {log}"
@@ -248,13 +249,13 @@ rule collect_genomes:
 rule map_reads:
     input:
         reads_1=lambda wildcards: config["reads_1"][wildcards.read],
-        reads_2=lambda wildcards: config["reads_2"][wildcards.read],
+        reads_2=lambda wildcards: config["reads_2"][wildcards.read] if config["reads_2"] else [],
         genomes=output_dir + "/mapping/{read}_reference.fna",
     output:
         dir=temp(directory(output_dir + "/mapping/{read}_coverm")),
         unmapped_bam=temp(output_dir + "/mapping/{read}_unmapped.bam"),
         reads_1=output_dir + "/mapping/{read}_unmapped.1.fq.gz",
-        reads_2=output_dir + "/mapping/{read}_unmapped.2.fq.gz",
+        reads_2=output_dir + "/mapping/{read}_unmapped.2.fq.gz" if config["reads_2"] else "",
     log:
         logs_dir + "/mapping/{read}.log",
     params:
@@ -263,6 +264,7 @@ rule map_reads:
         coverm_log=logs_dir + "/mapping/{read}_coverm.log",
         view_log=logs_dir + "/mapping/{read}_view.log",
         fastq_log=logs_dir + "/mapping/{read}_fastq.log",
+        reverse_arg="-2" if config["reads_2"] else "",
     threads:
         8
     conda:
@@ -271,7 +273,7 @@ rule map_reads:
          "coverm make "
          "-r {input.genomes} "
          "-1 {input.reads_1} "
-         "-2 {input.reads_2} "
+         "{params.reverse_arg} {input.reads_2} "
          "-o {output.dir} "
          "-t {threads} "
          "&> {params.coverm_log} "
@@ -286,7 +288,7 @@ rule map_reads:
          "-@ $(({threads} - 1)) "
          "{output.unmapped_bam} "
          "-1 {output.reads_1} "
-         "-2 {output.reads_2} "
+         "{params.reverse_arg} {output.reads_2} "
          "-0 /dev/null "
          "-s /dev/null "
          "-n "

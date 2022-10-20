@@ -31,7 +31,7 @@ def build_reads_list(forward, reverse):
             reverse_reads[joint_name] = os.path.abspath(reverse)
     else:
         forward_reads = {os.path.basename(read): os.path.abspath(read) for read in forward}
-        reverse_reads = None
+        reverse_reads = []
 
     return forward_reads, reverse_reads
 

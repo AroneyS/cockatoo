@@ -11,11 +11,13 @@ import pandas as pd
 def produce_command(row):
     coassembly_sample_names = row["samples"]
     coassembly_samples_1 = [snakemake.params.reads_1[sample] for sample in coassembly_sample_names]
-    coassembly_samples_2= [snakemake.params.reads_2[sample] for sample in coassembly_sample_names]
+    coassembly_samples_2= [snakemake.params.reads_2[sample] for sample in coassembly_sample_names] if snakemake.params.reads_2 else []
 
     all_samples_names = row["recover_samples"]
     all_samples_1 = [snakemake.params.reads_1[sample] for sample in all_samples_names]
-    all_samples_2 = [snakemake.params.reads_2[sample] for sample in all_samples_names]
+    all_samples_2 = [snakemake.params.reads_2[sample] for sample in all_samples_names] if snakemake.params.reads_2 else []
+
+    reverse_arg = "-2" if snakemake.params.reads_2 else ""
 
     coassembly = row["coassembly"]
     output_dir = snakemake.params.dir + "/coassemble"
@@ -24,7 +26,7 @@ def produce_command(row):
 
     aviary_assemble = ("aviary assemble "
     f"-1 {' '.join(coassembly_samples_1)} "
-    f"-2 {' '.join(coassembly_samples_2)} "
+    f"{reverse_arg} {' '.join(coassembly_samples_2)} "
     f"--output {output_dir}/{coassembly}/assemble "
     f"-n {threads} "
     f"-m {memory} "
@@ -33,7 +35,7 @@ def produce_command(row):
     aviary_recover = ("aviary recover "
     f"--assembly {output_dir}/{coassembly}/assemble/assembly/final_contigs.fasta "
     f"-1 {' '.join(all_samples_1)} "
-    f"-2 {' '.join(all_samples_2)} "
+    f"{reverse_arg} {' '.join(all_samples_2)} "
     f"--output {output_dir}/{coassembly}/recover "
     f"-n {threads} "
     f"-m {memory} "
