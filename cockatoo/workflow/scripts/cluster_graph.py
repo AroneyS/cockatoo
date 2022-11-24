@@ -11,6 +11,35 @@ from networkx.algorithms import components
 from operator import itemgetter
 import itertools
 
+def process_community(c, graph):
+    umbrella = set()
+    if len(c) <= MAX_RECOVERY_SAMPLES and len(c) >= MIN_COASSEMBLY_SAMPLES:
+        umbrella = c
+    if len(c) > MAX_COASSEMBLY_SAMPLES: return pd.DataFrame(), umbrella
+    if len(c) < MIN_COASSEMBLY_SAMPLES: return pd.DataFrame(), umbrella
+
+    subgraphview = nx.subgraph_view(
+        graph,
+        filter_node = lambda x: x in c
+        )
+
+    total_size = sum([data["read_size"] for _,data in subgraphview.nodes(data=True)])
+    if MAX_COASSEMBLY_SIZE and total_size > MAX_COASSEMBLY_SIZE: return pd.DataFrame(), umbrella
+
+    edgeview = subgraphview.edges(data=True)
+    total_weight = sum([data["weight"] for _,_,data in edgeview])
+    total_targets = len(set([i for l in [data["target_ids"].split(",") for _,_,data in edgeview] for i in l]))
+
+    df = pd.DataFrame({
+        "samples": ",".join(c),
+        "length": int(len(c)),
+        "total_weight": total_weight,
+        "total_targets": total_targets,
+        "total_size": total_size,
+        },
+        index = [0])
+    return df, umbrella
+
 def pipeline(
         elusive_edges,
         read_size,

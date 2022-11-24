@@ -3,6 +3,7 @@
 #########################
 # Author: Samuel Aroney
 
+import os
 import pandas as pd
 from itertools import combinations
 
@@ -41,6 +42,8 @@ def pipeline(
         if len(df) < 2: return []
 
         def sum_coverages(sample1, sample2, df):
+            print(df.loc[sample1]["coverage"])
+            print(df.loc[sample2]["coverage"])
             return df.loc[sample1]["coverage"] + df.loc[sample2]["coverage"]
 
         edges = [frozenset([df.loc[sample1]["sample"], df.loc[sample2]["sample"]])
@@ -94,6 +97,9 @@ def pipeline(
     return unbinned, sparse_edges
 
 if __name__ == "__main__":
+    os.environ["MODIN_CPUS"] = str(snakemake.threads)
+    import modin.pandas as pd
+
     MIN_COASSEMBLY_COVERAGE = snakemake.params.min_coassembly_coverage
     TAXA_OF_INTEREST = snakemake.params.taxa_of_interest
     unbinned_path = snakemake.input.unbinned
