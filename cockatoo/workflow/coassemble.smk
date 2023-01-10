@@ -246,6 +246,30 @@ rule cluster_graph:
     script:
         "scripts/cluster_graph.py"
 
+#######################
+### SRA downloading ###
+#######################
+rule download_sra:
+    output:
+        directory(output_dir + "/sra")
+    threads:
+        64
+    params:
+        sra=" ".join(config["sra"]) if config["sra"] else ""
+    conda:
+        "env/kingfisher.yml"
+    log:
+        logs_dir + "/sra/kingfisher.log"
+    shell:
+        "mkdir -p {output} && "
+        "cd {output} && "
+        "kingfisher get "
+        "-r {params.sra} "
+        "-f fastq.gz "
+        "-m ena-ascp ena-ftp prefetch aws-http aws-cp "
+        "-t {threads} "
+        "&> {log} "
+
 #####################################
 ### Map reads to matching genomes ###
 #####################################

@@ -5,3 +5,14 @@ genomes:
 taxa_of_interest: ""
 max_coassembly_size: 
 assemble_unmapped: false
+sra: false
+prodigal_meta: false
+single_assembly: false
+appraise_sequence_identity: 1
+min_coassembly_coverage: 1
+num_coassembly_samples: 1
+max_coassembly_samples: 1
+max_recovery_samples: 1
+unmapping_min_appraised: 1
+aviary_memory: 1
+aviary_threads: 1
